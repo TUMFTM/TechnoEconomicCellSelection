@@ -15,8 +15,8 @@ class Vehicle_simulation():
         
         # Vehicle parameters
         self.motor_power = 352.3675316051114e3 #Max power in W [average of all DT registered between the 1st January 2019 and the 30 June 2020]
-        self.fr = 0.005475931706892298 # Rolling friction coefficient [average of all DT registered between the 1st January 2019 and the 30 June 2020]
-        self.cd_a = 5.679362188060499 # Drag coefficient x Front surface area in m^2 [average of all DT registered between the 1st January 2019 and the 30 June 2020]
+        self.fr = 0.00385 # Rolling friction coefficient [Lowest of all DT registered between the 1st January 2019 and the 30 June 2020]
+        self.cd_a = 4.325 # Drag coefficient x Front surface area in m^2 [Lowest of all DT registered between the 1st January 2019 and the 30 June 2020]
         self.p_aux = 2.3e3 # auxiliary power consumption in W [Zhao 2013]
         self.eta = 0.85 # overall powertrain efficiency [Earl 2018]
         

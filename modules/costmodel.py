@@ -15,7 +15,6 @@ class Costmodel():
         # Mobility parameters
         self.r = 1.095 # Implicit discount rate (derived from observed investment behavior, not rational economics)  [EU Commission impact assessment on CO2 emission performance standards for new heavy duty vehicles]
         self.servicelife = 5 # Service life in years [Wietschel et al. 2019]
-        self.s_annual = 116_000 # Annual mileage in km [VECTO 5-LH]
         
         #Powertrain
         dmc_ice = 72.0 # Engine direct manufacturing costs in €/kW [Link et al. 2021]
@@ -72,10 +71,10 @@ class Costmodel():
         result = 0.951 * np.exp(-0.002 * total_mileage / 1000) # Share or original value
         return result
     
-    def calculate_cost(self, veh, con, cbat_spec, e_bat, bat_life_km):
+    def calculate_cost(self, veh, s_annual, con, cbat_spec, e_bat, t_bat):
         
         # Powertrain cost
-        c_pt_residual = (self.c_pt[veh]*self.residualValue(self.s_annual*self.servicelife)
+        c_pt_residual = (self.c_pt[veh]*self.residualValue(s_annual*self.servicelife)
                          *self.r**-self.servicelife) #residual value
         c_pt_imputed_interest = (self.c_pt[veh]+c_pt_residual)/2*(self.r**self.servicelife-1) #imputed interest
         c_pt = self.c_pt[veh] - c_pt_residual + c_pt_imputed_interest #total powertrain cost
@@ -85,23 +84,23 @@ class Costmodel():
                       for t in range(1, self.servicelife+1)]) 
         
         # Maintenance costs (due twice a year)      
-        c_maint = sum([self.c_maintenance[veh]*self.s_annual/2*self.r**(-t/2)
+        c_maint = sum([self.c_maintenance[veh]*s_annual/2*self.r**(-t/2)
                        for t in range(0,2*self.servicelife)])
         
         # Toll costs (due weekly)      
-        c_toll = sum([self.z_toll*self.c_toll[veh]*self.s_annual/52*self.r**(-t/52)
+        c_toll = sum([self.z_toll*self.c_toll[veh]*s_annual/52*self.r**(-t/52)
                      for t in range(0,52*self.servicelife)])
         
         # Energy consumption costs (due weekly)
-        c_ene = sum([self.c_ene[veh]*con*self.s_annual/52*self.r**(-t/52) 
+        c_ene = sum([self.c_ene[veh]*con*s_annual/52*self.r**(-t/52) 
                      for t in range(0, 52*self.servicelife)])
         
         ## Battery Costs
         if veh=="bet": # only for BET
             
             # Determine required battery replacements
-            n_replacements = int(self.s_annual*self.servicelife/bat_life_km) # number of replacements
-            t_installation = [bat_life_km*n/self.s_annual for n in range(0,n_replacements+1)] # time of replacments in years
+            n_replacements = int(self.servicelife/t_bat) # number of replacements
+            t_installation = [t_bat*n for n in range(0,n_replacements+1)] # time of replacments in years
             t_scrappage = t_installation[1:] # time of scrappage in years
             
             # Battery investment costs
@@ -112,12 +111,12 @@ class Costmodel():
                                for t in t_scrappage] #scrappage values
             
             # Residual value
-            bat_eol_soh = (1-self.s_annual*self.servicelife/bat_life_km%1) #remaining capacity at end of lifetime
+            bat_eol_soh = (1-self.servicelife/t_bat%1) #remaining capacity at end of lifetime
             c_bat_residual = ((self.z_scr + bat_eol_soh*(1-self.z_scr))
                               *cbat_spec*self.c_cell2system*e_bat* self.r**-self.servicelife) # Add resale value of remaining capacity at EOL
             
             # Imputed interest        
-            t_operation = [bat_life_km/self.s_annual]*n_replacements #investment till scrappage
+            t_operation = [t_bat]*n_replacements #investment till scrappage
             t_operation += [self.servicelife - t_installation[-1]] # investment till resale
             avg_bound_investment = [(c_purchase+c_scrap)/2 for (c_purchase,c_scrap) 
                                     in zip(c_bat_inv[:-1], c_bat_scrappage)] #investment till scrappage
@@ -135,15 +134,15 @@ class Costmodel():
         c_tot = sum([c_pt, c_tax, c_toll, c_maint, c_ene, c_bat])
         return c_tot, c_pt, c_tax, c_toll, c_maint, c_ene, c_bat
         
-    def costparityanalysis(self, e_bat, bet_con, bat_life_km):
+    def costparityanalysis(self, s_annual, e_bat, bet_con, bat_life_km):
         
         #Determine DT cost
-        dt_costs = self.calculate_cost("dt", self.dt_con, 0, 0, 0)[0]
+        dt_costs = self.calculate_cost("dt", s_annual, self.dt_con, 0, 0, 0)[0]
         
         #Find cost parity price using bisection
         c_bat_min = 0 #minimum considered specific battery cost in EUR/kWh
         c_bat_max = 500 #maximum considered specific battery cost in EUR/kWh   
         c_bat_par = bisect(lambda c_bat: dt_costs - self.calculate_cost(
-            "bet", bet_con, c_bat, e_bat, bat_life_km)[0], c_bat_min, c_bat_max)
+            "bet", s_annual, bet_con, c_bat, e_bat, bat_life_km)[0], c_bat_min, c_bat_max)
         
         return c_bat_par

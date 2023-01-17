@@ -21,6 +21,9 @@ class Method():
         self.f_con, self.f_v_avg = self.vehicle.simulate_consumption(
             self.sizing.m_nobat, self.sizing.m_bet_max)
         
+        # Parameters relevant to multiple functios
+        self.s_annual = 116_000 # Annual mileage in km [VECTO 5-LH]
+        
     def eval_cells(self, cells_input): 
         print("Sizing battery and performing cost parity analysis")
         
@@ -29,13 +32,13 @@ class Method():
         for i, cell in cells.iterrows():    
             
             # Run method for single cell
-            cbat_par, payload_max, vol_bat, con, con_max, e_bat, bat_life_km, m_bat, \
+            cbat_par, payload_max, vol_bat, con, con_max, e_bat, t_bat, m_bat, \
                 c_pt, c_tax, c_toll, c_maint, c_ene, c_bat = self.eval_cell(cell)
                     
             # Write results to dataframe
             cells.at[i,"Ebat"] = e_bat
             cells.at[i,"Econs"] = con
-            cells.at[i,"bat_life_km"] = bat_life_km
+            cells.at[i,"t_bat"] = t_bat
             cells.at[i,"Vbat"] = vol_bat 
             cells.at[i,"mbat"] = m_bat
             cells.at[i,"maxpayload"] = payload_max
@@ -53,18 +56,18 @@ class Method():
     def eval_cell(self, cell):
         
         # Battery sizing algorithm
-        e_bat, con, con_max, bat_life_km, vol_bat, m_bat, payload_max = \
-            self.sizing.size_battery(self.f_con, self.f_v_avg, cell)
+        e_bat, con, con_max, t_bat, vol_bat, m_bat, payload_max = \
+            self.sizing.size_battery(self.s_annual, self.f_con, self.f_v_avg, cell)
             
         # If the reference load can be transported
         if payload_max > self.sizing.ref_load:
             
             #determine cost parity price (break-even price)
-            cbat_par = self.costmodel.costparityanalysis(e_bat, con, bat_life_km)
+            cbat_par = self.costmodel.costparityanalysis(self.s_annual, e_bat, con, t_bat)
                         
             #and calculate other cost components 
             _, c_pt, c_tax, c_toll, c_maint, c_ene, c_bat = \
-                self.costmodel.calculate_cost("bet", con, cbat_par, e_bat, bat_life_km)
+                self.costmodel.calculate_cost("bet", self.s_annual, con, cbat_par, e_bat, t_bat)
         else: 
             cbat_par = None
             c_pt = None 
@@ -74,5 +77,5 @@ class Method():
             c_ene = None 
             c_bat = None
             
-        return cbat_par, payload_max, vol_bat, con, con_max, e_bat, bat_life_km, m_bat, \
+        return cbat_par, payload_max, vol_bat, con, con_max, e_bat, t_bat, m_bat, \
                 c_pt, c_tax, c_toll, c_maint, c_ene, c_bat

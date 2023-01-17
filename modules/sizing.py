@@ -32,15 +32,16 @@ class Sizing():
         self.m_nobat = m_empty_chassis + m_bet_drivetrain + m_trailer # Mass of BET excluding battery
         self.z_usable = 0.93 # Share of usable energy [Wassiliadis 2022]
         self.cp_share = 0.8 # share of battery that can be charged with max. C-rate [Nykvist 2019]
-        self.vol_cell2system = { #Ratio of volumetric energy density from cell [Wh/l] to system level [kWh/l] [Löbberding]
-            "Cylindrical": 0.295,
-            "Pouch": 0.353,
-            "Prismatic": 0.353
+        self.t_cal = {"NMC/NCA": 13, "LFP": 15, "LTO": 20} #Generic calendar life until 80% of initial capacity for NMC and LFP cells [Hesse 2017] 
+        self.vol_cell2system = { #Ratio of volumetric energy density from cell [Wh/l] to system level [kWh/l] [Löbberding adjusted for values reached by VW ID.3]
+            "Cylindrical": 0.295/0.353*0.4145985401459854,
+            "Pouch": 0.4145985401459854,
+            "Prismatic": 0.4145985401459854
         }
-        self.m_cell2system = { #Ratio of gravimetric energy density from cell [Wh/kg] to system level [kWh/kg] [Löbberding]
-            "Cylindrical": 0.552,  
-            "Pouch": 0.575,
-            "Prismatic": 0.575
+        self.m_cell2system = { #Gravimetric energy density from cell [Wh/kg] to system level [kWh/kg] [Löbberding adjusted for values reached by VW ID.3]
+            "Cylindrical": 0.552/0.575*0.6336996336996337,  
+            "Pouch": 0.6336996336996337,
+            "Prismatic": 0.6336996336996337
             }
 
         # Operating parameters
@@ -51,7 +52,7 @@ class Sizing():
         t_plug_unplug = 5/60 # Time required to connect and disconnect to the charger [Assumption]
         self.t_fc = t_break-t_plug_unplug # Time available for charging during the rest period in h
         
-    def size_battery(self, f_con, f_v_avg, cell):
+    def size_battery(self, s_annual, f_con, f_v_avg, cell):
         
         #Determine maximum energy consumption
         con_max = f_con(self.m_bet_max).item()
@@ -75,10 +76,12 @@ class Sizing():
             con = (self.share_low_load*f_con(m_tot+self.low_load) 
                    + self.share_ref_load*f_con(m_tot+self.ref_load))
             
-            # Determine battery life
-            bat_life_km = e_bat*cell["ncycle"]/con
+            # Determine battery life            
+            t_cal = self.t_cal[cell["Chemistry"]]*(1-cell["EOL"])/0.2
+            n_annual = s_annual*con/e_bat #Annual full equivalent cycles
+            t_bat = 1/(1/t_cal+n_annual/cell["ncycle"])
         else:
             con = None
-            bat_life_km = None
+            t_bat = None
         
-        return e_bat, con, con_max, bat_life_km, vol_bat, m_bat, payload_max
+        return e_bat, con, con_max, t_bat, vol_bat, m_bat, payload_max

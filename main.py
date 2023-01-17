@@ -10,7 +10,7 @@ from modules.method import Method
 from modules.myplots import Myplots
 
 #%% Load & postprocess cell data
-cells_raw = read_excel("inputs/CellDatabase_v5.xlsx") #Load cell database
+cells_raw = read_excel("inputs/CellDatabase_v6.xlsx") #Load cell database
 cells = postprocess(cells_raw) #Post process cell data
 
 #%% Evaluate default scenario (350kW charging)
