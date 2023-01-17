@@ -4,6 +4,16 @@ To reach cost-parity with diesel trucks, battery-electric trucks require fast-ch
 
 This repository provides the source code to the method, which we use to select the optimal cell out of a database containing over 160 cells for a long-haul truck operating with a single driver in Germany. The detailed documentation can be found in the following publication: [https://doi.org/10.1016/j.est.2021.103832](https://doi.org/10.1016/j.etran.2022.100225)
 
+## Versions
+
+To obtain the exact results shown in the publication, checkout the commit tagged as V0. 
+
+Since the initial publication, the following changes have been made: 
+1. We included the influence of calendaric aging in battery life estimate. Because cell datasheets do not provide any information on a cell's calendar life, we used estimates available for different cell chemistries from literature.
+2. A recent [report](https://brochures.volvotrucks.com/de/volvotrucks) showed that BET achieve a significantly lower energy consumption than the initial simulation, which used the average drag area and rolling friction coefficient of DT registered in 2019. Therefore, the best-in-class drag area and energy density are used to match the reported energy consumption better. 
+3. The initial publication used the average volumetric and gravimetric packaging efficiencies reported for passenger cars released between 2010 and 2019. However, for newer vehicle models, higher packaging efficiencies have been reported. To reflect the state-of-the-art, we updated the packaging efficiency for pouch and prismatic cells to those seen in the VW ID.3. The values for cylindrical cells have been scaled accordingly. 
+4. The cell database has been expanded
+
 ## Prerequisites
 To run the code, you'll need the following python packages: 
   - pandas
