@@ -71,7 +71,7 @@ class Myplots:
                   "Ccharge": C} for C in Crates]
         
         #Find required battery size
-        Ebats = [[method.sizing.size_battery(method.f_con, method.f_v_avg, c)[0] for method in methods] for c in cells]
+        Ebats = [[method.sizing.size_battery(method.s_annual, method.f_con, method.f_v_avg, c)[0] for method in methods] for c in cells]
         
         #Generate figure
         fig, ax = plt.subplots(figsize=(self.width, 0.3*self.width_wide))
@@ -92,7 +92,7 @@ class Myplots:
         #Write to dataframe
         cost_components = ["powertrain", "taxes", "toll", "maintenance", "energy", "battery"]
         colors = ["red", "orange", "yellow", "green", "blue", "indigo"]
-        dt_costs = method.costmodel.calculate_cost("dt", method.costmodel.dt_con, 0, 0, 0)[1:]
+        dt_costs = method.costmodel.calculate_cost("dt", method.s_annual, method.costmodel.dt_con, 0, 0, 0)[1:]
         bet_costs = [cell.c_pt, cell.c_tax, cell.c_toll, cell.c_maint, cell.c_ene, cell.c_bat]
         data = pd.DataFrame([dt_costs, bet_costs, colors],
                       index = ["dt_costs","bet_costs","color"], 
