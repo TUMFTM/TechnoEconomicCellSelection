@@ -62,7 +62,7 @@ class Vehicle_simulation():
     def simulate_consumption(self, m_min, m_max):
         
         # Generate lookup 
-        n_points = 11
+        n_points = 4
         gvws = np.linspace(m_min, m_max, n_points)
         cons, v_avgs = zip(*[self.run_sim(gvw) for gvw in gvws])        
         f_con = interp1d(gvws,cons)

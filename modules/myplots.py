@@ -92,8 +92,9 @@ class Myplots:
         #Write to dataframe
         cost_components = ["powertrain", "taxes", "toll", "maintenance", "energy", "battery"]
         colors = ["red", "orange", "yellow", "green", "blue", "indigo"]
-        dt_costs = method.costmodel.calculate_cost("dt", method.s_annual, method.costmodel.dt_con, 0, 0, 0)[1:]
-        bet_costs = [cell.c_pt, cell.c_tax, cell.c_toll, cell.c_maint, cell.c_ene, cell.c_bat]
+        dt_costs = method.costmodel.calculate_cost("dt", method.s_annual, method.costmodel.dt_con, 0, 0, 0)[1:7]        
+        bet_costs = [cell.c_pt, cell.c_tax, cell.c_toll, cell.c_maint, cell.c_ene, 
+                     cell.c_bat_init+cell.c_bat_repl+cell.c_bat_resi+cell.c_bat_intr]
         data = pd.DataFrame([dt_costs, bet_costs, colors],
                       index = ["dt_costs","bet_costs","color"], 
                       columns = cost_components)
@@ -197,6 +198,7 @@ class Myplots:
             topcell = scenario["topcell"]
             
             #Draw scatters of different cell formats and chemistries
+            result.dropna(inplace=True)
             result.sort_values("Chemistry", ascending=False, inplace=True)
             groups = result.groupby(["Chemistry", "Format"], sort = False)
             for name, group in groups:                                

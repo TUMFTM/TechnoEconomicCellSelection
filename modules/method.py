@@ -23,6 +23,7 @@ class Method():
         
         # Parameters relevant to multiple functios
         self.s_annual = 116_000 # Annual mileage in km [VECTO 5-LH]
+        self.p_fc = p_fc #Installed charging power in kW
         
     def eval_cells(self, cells_input): 
         print("Sizing battery and performing cost parity analysis")
@@ -33,8 +34,9 @@ class Method():
             
             # Run method for single cell
             cbat_par, payload_max, vol_bat, con, con_max, e_bat, t_bat, m_bat, \
-                c_pt, c_tax, c_toll, c_maint, c_ene, c_bat = self.eval_cell(cell)
-                    
+            c_pt, c_tax, c_toll, c_maint, c_ene, c_bat_init, c_bat_replacement, \
+                c_bat_residual, c_imputed_interest= self.eval_cell(cell)
+            
             # Write results to dataframe
             cells.at[i,"Ebat"] = e_bat
             cells.at[i,"Econs"] = con
@@ -48,9 +50,11 @@ class Method():
             cells.at[i,"c_toll"] = c_toll
             cells.at[i,"c_maint"] = c_maint
             cells.at[i,"c_ene"] = c_ene            
-            cells.at[i,"c_bat"] = c_bat
+            cells.at[i,"c_bat_init"] = c_bat_init
+            cells.at[i,"c_bat_repl"] = c_bat_replacement
+            cells.at[i,"c_bat_intr"] = c_imputed_interest
+            cells.at[i,"c_bat_resi"] = c_bat_residual
             
-        cells.dropna(inplace=True)
         return cells
     
     def eval_cell(self, cell):
@@ -66,7 +70,7 @@ class Method():
             cbat_par = self.costmodel.costparityanalysis(self.s_annual, e_bat, con, t_bat)
                         
             #and calculate other cost components 
-            _, c_pt, c_tax, c_toll, c_maint, c_ene, c_bat = \
+            _, c_pt, c_tax, c_toll, c_maint, c_ene, c_bat_init, c_bat_replacement, c_bat_residual, c_imputed_interest = \
                 self.costmodel.calculate_cost("bet", self.s_annual, con, cbat_par, e_bat, t_bat)
         else: 
             cbat_par = None
@@ -75,7 +79,11 @@ class Method():
             c_toll = None 
             c_maint = None 
             c_ene = None 
-            c_bat = None
+            c_bat_init = None
+            c_bat_replacement = None
+            c_bat_residual = None
+            c_imputed_interest = None
             
         return cbat_par, payload_max, vol_bat, con, con_max, e_bat, t_bat, m_bat, \
-                c_pt, c_tax, c_toll, c_maint, c_ene, c_bat
+                c_pt, c_tax, c_toll, c_maint, c_ene, c_bat_init, c_bat_replacement, \
+                c_bat_residual, c_imputed_interest

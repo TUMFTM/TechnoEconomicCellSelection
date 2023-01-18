@@ -52,14 +52,14 @@ class Costmodel():
         }
         
         # Energy consumption
-        c_elec_sc = 0.2515 # Slow charging electricity cost in EUR/kWh excl. VAT [ISI - LFS III 2021]
-        c_elec_fc = {350: 0.35/1.19, # 350kW charging electricity cost in EUR/kWh excl. VAT [Ionity price]
+        self.c_elec_sc = 0.2515 # Slow charging electricity cost in EUR/kWh excl. VAT [ISI - LFS III 2021]
+        self.c_elec_fc = {350: 0.35/1.19, # 350kW charging electricity cost in EUR/kWh excl. VAT [Ionity price]
                      1000: 0.44/1.19} # 1MW charging electricity cost in EUR/kWh excl. VAT [Assumed to be upper limit announced by Scheuer]
-        z_fc = 0.2 #Share of fast charged energy [Basma et al.]
+        self.z_fc = 0.2 #Share of fast charged energy [Basma et al.]
         self.dt_con = dt_con #DT consumption in liter/km
         self.c_ene = {
             "dt": 1.609/1.19, # Cost of diesel fuel in €/liter}
-            "bet": z_fc*c_elec_fc[p_fc] + (1-z_fc)*c_elec_sc # Cost of charging in €/kWh
+            "bet": self.z_fc*self.c_elec_fc[p_fc] + (1-self.z_fc)*self.c_elec_sc # Cost of charging in €/kWh
             }
         
         # Battery
@@ -76,8 +76,7 @@ class Costmodel():
         # Powertrain cost
         c_pt_residual = (self.c_pt[veh]*self.residualValue(s_annual*self.servicelife)
                          *self.r**-self.servicelife) #residual value
-        c_pt_imputed_interest = (self.c_pt[veh]+c_pt_residual)/2*(self.r**self.servicelife-1) #imputed interest
-        c_pt = self.c_pt[veh] - c_pt_residual + c_pt_imputed_interest #total powertrain cost
+        c_pt = self.c_pt[veh] - c_pt_residual #total powertrain cost
         
         # Taxes (due once a year)        
         c_tax = sum([self.c_tax[veh]*self.r**-t 
@@ -98,41 +97,43 @@ class Costmodel():
         ## Battery Costs
         if veh=="bet": # only for BET
             
-            # Determine required battery replacements
+            # Initial battery costs
+            c_bat_init = cbat_spec*self.c_cell2system*e_bat
+            
+            # Battery replacement costs
             n_replacements = int(self.servicelife/t_bat) # number of replacements
-            t_installation = [t_bat*n for n in range(0,n_replacements+1)] # time of replacments in years
-            t_scrappage = t_installation[1:] # time of scrappage in years
-            
-            # Battery investment costs
-            c_bat_inv = [cbat_spec*self.c_cell2system*e_bat*self.r**-t for t in t_installation]
-            
-            # Scrappage value
-            c_bat_scrappage = [self.z_scr*cbat_spec*self.c_cell2system*e_bat*self.r**-t
-                               for t in t_scrappage] #scrappage values
+            t_replacement = [t_bat*n for n in range(1,n_replacements+1)] # time of replacments in years            
+            c_bat_replacements = [cbat_spec*self.c_cell2system*e_bat*self.r**-t for t in t_replacement]
+            c_bat_replacement = sum(c_bat_replacements)
             
             # Residual value
+            c_bat_scrappage = [self.z_scr*cbat_spec*self.c_cell2system*e_bat*self.r**-t for t in t_replacement] #scrappage values
             bat_eol_soh = (1-self.servicelife/t_bat%1) #remaining capacity at end of lifetime
-            c_bat_residual = ((self.z_scr + bat_eol_soh*(1-self.z_scr))
-                              *cbat_spec*self.c_cell2system*e_bat* self.r**-self.servicelife) # Add resale value of remaining capacity at EOL
+            c_bat_eol = ((self.z_scr + bat_eol_soh*(1-self.z_scr))
+                         *cbat_spec*self.c_cell2system*e_bat* self.r**-self.servicelife) # Add resale value of remaining capacity at EOL
+            c_bat_residuals = c_bat_scrappage + [c_bat_eol]
+            c_bat_residual = -sum(c_bat_residuals)
             
-            # Imputed interest        
-            t_operation = [t_bat]*n_replacements #investment till scrappage
-            t_operation += [self.servicelife - t_installation[-1]] # investment till resale
-            avg_bound_investment = [(c_purchase+c_scrap)/2 for (c_purchase,c_scrap) 
-                                    in zip(c_bat_inv[:-1], c_bat_scrappage)] #investment till scrappage
-            avg_bound_investment += [(c_bat_inv[-1]+c_bat_residual)/2] # investment till resale
-            c_bat_imputed_interests = [invest*(self.r**t-1) for (invest,t)
-                                       in zip(avg_bound_investment, t_operation)]
-
-            # Total battery costs
-            c_bat = (sum(c_bat_inv) - sum(c_bat_scrappage) - c_bat_residual + sum(c_bat_imputed_interests))          
-            
+            # Imputed interest
+            t_operation = [t_bat]*n_replacements + [self.servicelife - t_bat*n_replacements]#Vector of investment durations
+            c_bat_inv = [c_bat_init] + c_bat_replacements
+            avg_bound_investment = [(c_purchase+c_res)/2 for (c_purchase,c_res) 
+                                    in zip(c_bat_inv, c_bat_residuals)] #investment till scrappage
+            c_bat_imputed_interest = sum([invest*(self.r**t-1) for (invest,t)
+                                       in zip(avg_bound_investment, t_operation)])
         else:
-            c_bat = 0
+            c_bat_init = 0      
+            c_bat_replacement = 0
+            c_bat_residual = 0
+            c_bat_imputed_interest = 0
         
+        #Imputed interest
+        c_pt_imputed_interest = (self.c_pt[veh]+c_pt_residual)/2*(self.r**self.servicelife-1) #imputed interest
+        c_imputed_interest = c_pt_imputed_interest + c_bat_imputed_interest 
+
         #Total costs
-        c_tot = sum([c_pt, c_tax, c_toll, c_maint, c_ene, c_bat])
-        return c_tot, c_pt, c_tax, c_toll, c_maint, c_ene, c_bat
+        c_tot = sum([c_pt, c_tax, c_toll, c_maint, c_ene, c_bat_init, c_bat_replacement, c_bat_residual, c_imputed_interest])
+        return c_tot, c_pt, c_tax, c_toll, c_maint, c_ene, c_bat_init, c_bat_replacement, c_bat_residual, c_imputed_interest
         
     def costparityanalysis(self, s_annual, e_bat, bet_con, bat_life_km):
         

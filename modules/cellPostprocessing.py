@@ -30,11 +30,11 @@ def postprocess(cells_raw):
             cells_raw.at[i,"mspec"] = cell["grav. Energy Density (Wh/kg)"] # gravimetric density in Wh/kg
         else: 
             cells_raw.at[i,"mspec"] = E_cell/cell["Weight (gr)"]*1000 # gravimetric density in Wh/kg
-        
+    
     # Determine cell chemistry based on nominal voltage
     cells_raw.loc[cells_raw["Nominal Voltage (V)"] > 3.4, "Chemistry"] = "NMC/NCA"
-    cells_raw.loc[cells_raw["Nominal Voltage (V)"] <= 2, "Chemistry"] = "LTO"
-    cells_raw.loc[[2 < u <= 3.4 for u in cells_raw["Nominal Voltage (V)"]], "Chemistry"] = "LFP"
+    cells_raw.loc[cells_raw["Nominal Voltage (V)"] <= 3, "Chemistry"] = "LTO"
+    cells_raw.loc[[3 < u <= 3.4 for u in cells_raw["Nominal Voltage (V)"]], "Chemistry"] = "LFP"
 
     # Limit to relevant columns
     relevant_columns = ["Company Name","Part #",
