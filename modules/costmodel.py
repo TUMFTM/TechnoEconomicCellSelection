@@ -63,8 +63,9 @@ class Costmodel():
             }
         
         # Battery
-        self.c_cell2system = 2.07 # Cost scaling factor cell to system [König 2021]         
+        self.c_cell2system = 1/0.83 # Cost scaling factor cell to system [BNEF 2022: https://about.bnef.com/blog/lithium-ion-battery-pack-prices-rise-for-first-time-to-an-average-of-151-kwh/]         
         self.z_scr = 0.15 # Residual value of battery at end of life [Burke and Fulton 2019]        
+        self.c_par_avg = 105.77 #Average BEV cell price 2022 [BNEF 2022: https://about.bnef.com/blog/lithium-ion-battery-pack-prices-rise-for-first-time-to-an-average-of-151-kwh/]         
 
     def residualValue (self, total_mileage): 
         # Empiric relation found by Friedrich und Kleiner (2017)

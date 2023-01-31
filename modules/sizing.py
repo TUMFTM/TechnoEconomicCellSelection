@@ -33,17 +33,51 @@ class Sizing():
         self.z_usable = 0.93 # Share of usable energy [Wassiliadis 2022]
         self.cp_share = 0.8 # share of battery that can be charged with max. C-rate [Nykvist 2019]
         self.t_cal = {"NMC/NCA": 13, "LFP": 15, "LTO": 20} #Generic calendar life until 80% of initial capacity for NMC and LFP cells [Hesse 2017] 
-        self.vol_cell2system = { #Ratio of volumetric energy density from cell [Wh/l] to system level [kWh/l] [Löbberding adjusted for values reached by VW ID.3]
-            "Cylindrical": 0.295/0.353*0.4145985401459854,
-            "Pouch": 0.4145985401459854,
-            "Prismatic": 0.4145985401459854
-        }
-        self.m_cell2system = { #Gravimetric energy density from cell [Wh/kg] to system level [kWh/kg] [Löbberding adjusted for values reached by VW ID.3]
-            "Cylindrical": 0.552/0.575*0.6336996336996337,  
-            "Pouch": 0.6336996336996337,
-            "Prismatic": 0.6336996336996337
-            }
 
+        #Volumetric packaging efficiency: Ratio of energy density from cell [Wh/l] to system level [kWh/l]     
+        vol_c2s_id3 = 0.4145985401459854 #Volumetric packaging efficienciy of VW ID.3 cell [Wassiliadis et al.]
+        vol_c2s_lfp = 0.553 #Tesla Model 3 0.64 #Volumetric packaging efficienciy of LFP cell [Frith et al.]
+        vol_c2s_round_to_prism = 0.295/0.353 # Reduced volumetric packaging efficiency of cyclindrical cell compared to pouch/prismatic [Löbberding]
+        self.vol_cell2system = {
+            "NMC/NCA": {
+                "Pouch": vol_c2s_id3,
+                "Prismatic": vol_c2s_id3,
+                "Cylindrical": vol_c2s_id3 * vol_c2s_round_to_prism
+                },
+            "LFP": {
+                "Pouch": vol_c2s_lfp,
+                "Prismatic": vol_c2s_lfp,
+                "Cylindrical": vol_c2s_lfp * vol_c2s_round_to_prism
+                },
+            "LTO": {
+                "Pouch": vol_c2s_lfp,
+                "Prismatic": vol_c2s_lfp,
+                "Cylindrical": vol_c2s_lfp * vol_c2s_round_to_prism
+                }
+            }
+        
+        #Gravimetric packaging efficiency: Ratio of specific energy from cell [Wh/kg] to system level [kWh/kg]
+        m_c2s_id3 = 0.6336996336996337 #Gravimetric packaging efficienciy of VW ID.3 cell [Wassiliadis et al.]
+        m_c2s_lfp = 0.716# Tesla model 3 0.84 #Gravimetric packaging efficienciy of LFP cell [Frith et al.]
+        m_c2s_round_to_prism = 0.552/0.575 # Reduced gravimetric packaging efficiency of cyclindrical cell compared to pouch/prismatic [Löbberding]
+        self.m_cell2system = {
+            "NMC/NCA": {
+                "Pouch": m_c2s_id3,
+                "Prismatic": m_c2s_id3,
+                "Cylindrical": m_c2s_id3 * m_c2s_round_to_prism
+                },
+            "LFP": {
+                "Pouch": m_c2s_lfp,
+                "Prismatic": m_c2s_lfp,
+                "Cylindrical": m_c2s_lfp * m_c2s_round_to_prism
+                },
+            "LTO": {
+                "Pouch": m_c2s_lfp,
+                "Prismatic": m_c2s_lfp,
+                "Cylindrical": m_c2s_lfp * m_c2s_round_to_prism
+                }
+            }
+        
         # Operating parameters
         self.p_fc = p_fc # Available charging power during rest period in kW
         self.t_trip_max = 4.5 # Maximum trip driving time in h [StVZO Artikel 7]
@@ -65,10 +99,10 @@ class Sizing():
         e_bat = max(ene_req_day, ene_req_charger)/cell["EOL"]/self.z_usable #Required battery size in kWh
         
         # Determine reulsting battery & vehicle properties
-        m_bat = e_bat/cell["mspec"]/self.m_cell2system[cell["Format"]]*1000 #Battery mass in kg
+        m_bat = e_bat/cell["mspec"]/self.m_cell2system[cell["Chemistry"]][cell["Format"]]*1000 #Battery mass in kg
         m_tot = m_bat + self.m_nobat #Vehicle mass in kg
         payload_max = self.m_bet_max-m_tot #Maximum payload in kg
-        vol_bat = e_bat/cell["rho_bat"]/self.vol_cell2system[cell["Format"]]*1000 #Battery volume in l
+        vol_bat = e_bat/cell["rho_bat"]/self.vol_cell2system[cell["Chemistry"]][cell["Format"]]*1000 #Battery volume in l
         
         #If RL payload is feasible, calculate characteristic energy consumption and battery lifetime in km
         if payload_max >= self.ref_load:

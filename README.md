@@ -9,11 +9,13 @@ This repository provides the source code to the method, which we use to select t
 To obtain the exact results shown in the publication, checkout the commit tagged as V0. 
 
 Since the initial publication (see commit V0), the following changes have been made: 
-1. We included the influence of calendaric aging in battery life estimate. Because cell datasheets do not provide any information on a cell's calendar life, we used estimates available for different cell chemistries from literature.
+1. We included the influence of calendaric aging in the battery life estimate. Because cell datasheets do not provide any information on a cell's calendar life, we used estimates available for different cell chemistries from literature.
 2. A recent [report](https://brochures.volvotrucks.com/de/volvo-trucks/testberichte/2022/volvo-fh-electric-testbericht-trucker-2022-01/?page=4) showed that BET achieve a significantly lower energy consumption than the initial simulation, which used the average drag area and rolling friction coefficient of DT registered in 2019. Therefore, the best-in-class drag area and energy density are used to match the reported energy consumption better. 
 3. The initial publication used the average volumetric and gravimetric packaging efficiencies reported for passenger cars released between 2010 and 2019. However, for newer vehicle models, higher packaging efficiencies have been reported. To reflect the state-of-the-art, we updated the packaging efficiency for pouch and prismatic cells to those seen in the VW ID.3. The values for cylindrical cells have been scaled accordingly. 
 4. The cell database has been expanded.
 5. The cell used in the VW ID.3 is used as the reference cell in both scenarios, to show the applicability of state-of-the-art, large-volume-production automotive-grade cells.
+6. The cell to pack cost ratio was updated to reflect state of the art BEV battery packs
+7. A differentiation of the packaging efficiency for different cell chemistries was implemented
 
 ## Prerequisites
 To run the code, you'll need the following python packages: 

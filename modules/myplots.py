@@ -226,7 +226,7 @@ class Myplots:
             
             #Draw lines for reference load, DT payload and DT volume
             ax_row[0].set_xlim(0, 28e3)
-            ax_row[0].set_ylim(0, 220)
+            ax_row[0].set_ylim(0, 360)
             ax_row[0].axvline(method.sizing.ref_load, color = "red", linestyle = "dashed")
             ax_row[0].axvline(method.sizing.dt_payload_max, color = "red", linestyle = "dashed")
             ax_row[0].text(0.95*method.sizing.ref_load, ax_row[0].get_ylim()[1]*0.5, "Reference load",
@@ -238,7 +238,7 @@ class Myplots:
             ax_row[0].set_xlim(0, method.sizing.dt_payload_max*1.13)
             
             ax_row[1].set_xlim(0, 8750)
-            ax_row[1].set_ylim(0, 220)
+            ax_row[1].set_ylim(0, 360)
             ax_row[1].axvline(method.sizing.dt_vol_pt, color = "red", linestyle = "dashed")
             ax_row[1].text(0.75*method.sizing.dt_vol_pt,  ax_row[0].get_ylim()[1]*0.5, "Powertrain volume\n Diesel truck",
                             color = "red", rotation=90,
@@ -283,7 +283,7 @@ class Myplots:
             #Plot results
             for param, m in zip(selection, markers):
                 if param in ["m_cell2system", "vol_cell2system"]:
-                    paramlabel = f"{param}: {parameter_variation[param][0][topcell.Format]*1000:.2f}-{parameter_variation[param][-1][topcell.Format]*1000:.2f}"
+                    paramlabel = f"{param}: {parameter_variation[param][0][topcell.Chemistry][topcell.Format]*1000:.2f}-{parameter_variation[param][-1][topcell.Chemistry][topcell.Format]*1000:.2f}"
                 elif param == "consumption":
                     paramlabel = f"{param}: {con_maxs[0]:.2f}//{con_refs[0]:.2f}-{con_maxs[-1]:.2f}//{con_refs[-1]:.2f}"
                 else:
@@ -297,7 +297,7 @@ class Myplots:
             #Draw lines for reference load, DT payload and DT volume
             ax_row[0].legend(numpoints=2)
             ax_row[0].set_xlim(0, 28e3)
-            ax_row[0].set_ylim(0, 220)
+            ax_row[0].set_ylim(0, 360)
             ax_row[0].axvline(method.sizing.ref_load, color = "red", linestyle = "dashed")
             ax_row[0].axvline(method.sizing.dt_payload_max, color = "red", linestyle = "dashed")
             ax_row[0].text(0.95*method.sizing.ref_load, ax_row[0].get_ylim()[1]*0.5, "Reference load",
@@ -309,7 +309,7 @@ class Myplots:
             ax_row[0].set_xlim(0, method.sizing.dt_payload_max*1.13)
             
             ax_row[1].set_xlim(0, 8750)
-            ax_row[1].set_ylim(0, 220)
+            ax_row[1].set_ylim(0, 360)
             ax_row[1].axvline(method.sizing.dt_vol_pt, color = "red", linestyle = "dashed")
             ax_row[1].text(0.75*method.sizing.dt_vol_pt,  ax_row[0].get_ylim()[1]*0.5, "Powertrain volume\n Diesel truck",
                             color = "red", rotation=90,
@@ -338,8 +338,8 @@ class Myplots:
         #Calculate minimum and maximum values
         m_bat_max = method.sizing.m_bet_max - method.sizing.m_nobat-method.sizing.ref_load #Maximum allowed battery weight to transport reference load in kg
         m_cell2system_min = topcell.Ebat/m_bat_max/topcell.mspec  + 1e-9 #Minimum gravimetric packaging efficiency
-        mspec_min = 1000*topcell.Ebat/m_bat_max/method.sizing.m_cell2system[topcell.Format] + 1e-9 #Minimum specific energy in Wh/kg
-        Emax = topcell.mspec*method.sizing.m_cell2system[topcell.Format]*m_bat_max/1000 #Maximum battery size that can transport the reference load
+        mspec_min = 1000*topcell.Ebat/m_bat_max/method.sizing.m_cell2system[topcell.Chemistry][topcell.Format] + 1e-9 #Minimum specific energy in Wh/kg
+        Emax = topcell.mspec*method.sizing.m_cell2system[topcell.Chemistry][topcell.Format]*m_bat_max/1000 #Maximum battery size that can transport the reference load
         Eday = method.f_con(method.sizing.m_bet_max)*method.f_v_avg(method.sizing.m_bet_max)*method.sizing.t_drive_max #Daily energy consumption
         Crate_min = (Eday-Emax*method.sizing.z_usable*topcell.EOL)/Emax/method.sizing.t_fc + 1e-9 #Minimum Crate
         Crate_max = method.sizing.z_usable*topcell.EOL*min(
@@ -351,21 +351,27 @@ class Myplots:
                       "mspec": np.linspace(mspec_min, max(cells["mspec"]), n_var), 
                       "rho_bat": np.linspace(min(cells["rho_bat"]), max(cells["rho_bat"]), n_var), 
                       "Ccharge": np.linspace(max(Crate_min, min(cells["Ccharge"])), Crate_max, n_var),
-                      "vol_cell2system": [{"Cylindrical":cy, "Pouch":po, "Prismatic":pr} 
+                      "vol_cell2system": [
+                          {"NMC/NCA": {"Cylindrical":cy, "Pouch":po, "Prismatic":pr},
+                           "LFP": {"Cylindrical":cy, "Pouch":po, "Prismatic":pr},
+                           "LTO": {"Cylindrical":cy, "Pouch":po, "Prismatic":pr}}
                        for cy,po,pr in zip(
                           np.linspace(0.247, 0.356, n_var), #Min & max values for cylindrical cells [Löbberding]
                           np.linspace(0.168, 0.528, n_var), #Min & max values for pouch cells [Löbberding]
                           np.linspace(0.168, 0.528, n_var) #Min & max values for prismatic cells [Löbberding]
                           )
                           ],               
-                      "m_cell2system": [{"Cylindrical":cy, "Pouch":po, "Prismatic":pr} 
+                      "m_cell2system": [
+                          {"NMC/NCA": {"Cylindrical":cy, "Pouch":po, "Prismatic":pr},
+                           "LFP": {"Cylindrical":cy, "Pouch":po, "Prismatic":pr},
+                           "LTO": {"Cylindrical":cy, "Pouch":po, "Prismatic":pr}}
                        for cy,po,pr in zip(
                           np.linspace(max(m_cell2system_min,0.484), 0.672, n_var), #Min & max values for cylindrical cells [Löbberding]
                           np.linspace(max(m_cell2system_min,0.495), 0.742, n_var), #Min & max values for pouch cells [Löbberding]
                           np.linspace(max(m_cell2system_min,0.495), 0.742, n_var), #Min & max values for prismatic cells [Löbberding]
                           )
                           ],
-                      "c_cell2system": np.linspace(1.94, 2.21, n_var), #Min & max values for 2020 [König] 
+                      "c_cell2system": np.linspace(1.2, 2.21, n_var), #Min & max values for 2020 [König] 
                       "annual_mileage": np.linspace(96_850, 180_000, n_var), # maximum annual mileage
                       "servicelife": np.arange(2,11), #Payback period considered by large fleets [IEA 2017] until average truck life in Germany [Wolff 2021] 
                       "c_diesel": np.linspace(1.233/1.19, 2.16/1.19, n_var), #Lowest and highest Diesel cost in Germany between Jan 2021 and March 2022
