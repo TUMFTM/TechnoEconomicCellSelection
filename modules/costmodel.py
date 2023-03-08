@@ -136,7 +136,7 @@ class Costmodel():
         c_tot = sum([c_pt, c_tax, c_toll, c_maint, c_ene, c_bat_init, c_bat_replacement, c_bat_residual, c_imputed_interest])
         return c_tot, c_pt, c_tax, c_toll, c_maint, c_ene, c_bat_init, c_bat_replacement, c_bat_residual, c_imputed_interest
         
-    def costparityanalysis(self, s_annual, e_bat, bet_con, bat_life_km):
+    def costparityanalysis(self, s_annual, e_bat, bet_con, t_bat):
         
         #Determine DT cost
         dt_costs = self.calculate_cost("dt", s_annual, self.dt_con, 0, 0, 0)[0]
@@ -145,6 +145,6 @@ class Costmodel():
         c_bat_min = 0 #minimum considered specific battery cost in EUR/kWh
         c_bat_max = 500 #maximum considered specific battery cost in EUR/kWh   
         c_bat_par = bisect(lambda c_bat: dt_costs - self.calculate_cost(
-            "bet", s_annual, bet_con, c_bat, e_bat, bat_life_km)[0], c_bat_min, c_bat_max)
+            "bet", s_annual, bet_con, c_bat, e_bat, t_bat)[0], c_bat_min, c_bat_max)
         
         return c_bat_par
